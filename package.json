@@ -1,0 +1,19 @@
+{
+  "name": "googlesheets_test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "isomorphic-fetch": "^3.0.0",
+    "nodemon": "^3.1.4"
+  }
+}
