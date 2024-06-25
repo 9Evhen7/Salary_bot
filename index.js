@@ -34,6 +34,17 @@ const getToken = async () => {
   }
 };
 
+const getUsedRange = async (client) => {
+  try {
+    const response = await client.get("/worksheets('main_data')/usedRange");
+    console.log(response.data)
+    return response.data;
+  } catch (error) {
+    console.error('Error getting used range:', error.response.data);
+    throw error;
+  }
+};
+
 const modifyExcelSheet = async (siteId, itemId) => {
     const accessToken = await getToken();
     const client = axios.create({
@@ -44,15 +55,26 @@ const modifyExcelSheet = async (siteId, itemId) => {
       }
     });
     try {
-      const response = await client.patch(`/worksheets('main_data')/range(address='A4')`, {
-        values: [['блаблабла']]
+      // const response = await client.patch(`/worksheets('main_data')/range(address='A4')`, {
+      //   values: [['блаблабла']]
+      // });
+
+      const usedRange = await getUsedRange(client);
+      const lastRow = usedRange.address.split(':')[1].replace(/[^0-9]/g, '');
+      const nextRow = parseInt(lastRow) + 1;
+
+      const rowValues = [['Дата12','ФІО12','Сума12']];
+      const response = await client.patch(`/worksheets('main_data')/range(address='A${nextRow}:C${nextRow}')`, {
+        values: rowValues
       });
-      console.log('Cell updated successfully:', response.data);
+      // console.log('Cell updated successfully:', response.data);
     } catch (error) {
       console.error('Error updating cell:', error.response.data);
       throw error;
     }
   };
+
+
 
   
   modifyExcelSheet(siteId, itemId).catch(console.error);
