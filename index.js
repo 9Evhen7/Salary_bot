@@ -5,76 +5,76 @@ require('isomorphic-fetch');
 const dotenv = require ('dotenv');
 dotenv.config();
 
+const { Telegraf } = require('telegraf');
+const { message } = require('telegraf/filters');
+
+const {modifyExcelSheet} = require('./functions/modifyExcelSheet');
 
 const {TENANT_ID, CLIENT_ID,CLIENT_SECRET, ITEM_ID, DOCUMENT_ID,SITE_ID} = process.env
 const clientId = CLIENT_ID;
 const clientSecret = CLIENT_SECRET;
 const tenantId = TENANT_ID;
 const itemId = ITEM_ID;
-const documentId = DOCUMENT_ID;
 const siteId = SITE_ID;
-
-const getToken = async () => {
-  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
-  const params = {
+  
+const IdList = {
+  siteId,
+  itemId,
+  tenantId,
+}
+const params = {
     grant_type: 'client_credentials',
     client_id: clientId,
     client_secret: clientSecret,
     scope: 'https://graph.microsoft.com/.default'
   };
-  try {
-    const response = await axios.post(url, qs.stringify(params), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    });
-    return response.data.access_token;
-  } catch (error) {
-    console.error('Error fetching access token:', error);
+  const rowValues = [['Date','Name','Salary']];
+
+  const test = async()=>{
+    await modifyExcelSheet(IdList,params,rowValues);
   }
-};
 
-const getUsedRange = async (client) => {
-  try {
-    const response = await client.get("/worksheets('main_data')/usedRange");
-    console.log(response.data)
-    return response.data;
-  } catch (error) {
-    console.error('Error getting used range:', error.response.data);
-    throw error;
-  }
-};
+  // test();
 
-const modifyExcelSheet = async (siteId, itemId) => {
-    const accessToken = await getToken();
-    const client = axios.create({
-      baseURL: `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/items/${itemId}/workbook`,
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    try {
-      // const response = await client.patch(`/worksheets('main_data')/range(address='A4')`, {
-      //   values: [['блаблабла']]
-      // });
+  const bot = new Telegraf(process.env.BOT_TOKEN);
 
-      const usedRange = await getUsedRange(client);
-      const lastRow = usedRange.address.split(':')[1].replace(/[^0-9]/g, '');
-      const nextRow = parseInt(lastRow) + 1;
+  let userData = {};
 
-      const rowValues = [['Дата12','ФІО12','Сума12']];
-      const response = await client.patch(`/worksheets('main_data')/range(address='A${nextRow}:C${nextRow}')`, {
-        values: rowValues
-      });
-      // console.log('Cell updated successfully:', response.data);
-    } catch (error) {
-      console.error('Error updating cell:', error.response.data);
-      throw error;
+bot.start((ctx) => {
+    const userId = ctx.from.id;
+    userData[userId] = { numbers: [] };  // Initialize the user's data
+    ctx.reply('Welcome! Please enter your name:');
+});
+
+bot.on('text', (ctx) => {
+    const userId = ctx.from.id;
+    const text = ctx.message.text;
+
+    if (!userData[userId]) {
+        userData[userId] = { numbers: [] };  // Initialize the user's data if not already done
     }
-  };
 
+    if (!userData[userId].name) {
+        userData[userId].name = text;
+        ctx.reply(`Nice to meet you, ${userData[userId].name}! Now, please enter a number:`);
+    } else {
+        const number = parseInt(text);
+        if (!isNaN(number)) {
+            userData[userId].numbers.push(number);
+            ctx.reply(`Thank you! You entered number ${number}. Feel free to enter another number or type /done when you're finished.`);
+        } else {
+            ctx.reply('That doesn\'t seem to be a valid number. Please enter a number:');
+        }
+    }
+});
 
+bot.command('done', (ctx) => {
+    const userId = ctx.from.id;
+    if (userData[userId] && userData[userId].numbers.length > 0) {
+        ctx.reply(`You have entered the following numbers: ${userData[userId].numbers.join(', ')}`);
+    } else {
+        ctx.reply('You have not entered any numbers yet.');
+    }
+});
 
-  
-  modifyExcelSheet(siteId, itemId).catch(console.error);
+bot.launch();
