@@ -29,7 +29,7 @@ const modifyExcelSheet = async (IdList,params,rowValues) => {
       console.log('Cell updated successfully!');
       // console.log('Cell updated successfully:', response.data);
     } catch (error) {
-      console.error('Error updating cell:', error.response.data);
+      console.error('Error updating cell:', error.message);
       throw error;
     }
   };

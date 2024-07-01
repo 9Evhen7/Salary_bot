@@ -1,12 +1,5 @@
-const axios = require('axios');
-const qs = require('qs');
-const {bot} = require('./botConnect');
-const { Client } = require('@microsoft/microsoft-graph-client');
-require('isomorphic-fetch');
 const dotenv = require ('dotenv');
 dotenv.config();
-
-const {modifyExcelSheet} = require('./functions/modifyExcelSheet');
 
 const {TENANT_ID, CLIENT_ID,CLIENT_SECRET, ITEM_ID, DOCUMENT_ID,SITE_ID} = process.env
 const clientId = CLIENT_ID;
@@ -26,13 +19,8 @@ const params = {
     client_secret: clientSecret,
     scope: 'https://graph.microsoft.com/.default'
   };
-  const rowValues = [['Date','Name','Salary']];
 
-//   const test = async()=>{
-//     await modifyExcelSheet(IdList,params,rowValues);
-
-//   }
-
-//   test();
-
-bot.launch();
+  module.exports={
+    IdList,
+    params
+  }
