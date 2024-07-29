@@ -1,58 +1,63 @@
-const { Telegraf } = require('telegraf');
-const { message } = require('telegraf/filters');
-const { format } = require('date-fns');
-const dotenv = require ('dotenv');
+const { Telegraf } = require("telegraf");
+const { message } = require("telegraf/filters");
+const { format } = require("date-fns");
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+const { uploadPhoto } = require("./functions/uploadPhoto");
+const dotenv = require("dotenv");
 dotenv.config();
 
+const { IdList, params } = require("./params");
+const { modifyExcelSheet } = require("./functions/modifyExcelSheet");
 
-const {IdList,params} = require('./params');
-const {modifyExcelSheet} = require('./functions/modifyExcelSheet');
-
-const mode = async(rowV)=>{
-    await modifyExcelSheet(IdList,params,rowV);
-}
+// const mode = async (rowV) => {
+//   await modifyExcelSheet(IdList, params, rowV);
+// };
 let userData = {};
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-bot.telegram.setMyCommands([
-    {
-      command: 'test',
-      description: 'Тестова команда',
-    },
-    {
-      command: 'greetings',
-      description: 'Команда вітання',
-    }
-  ]);
+// bot.telegram.setMyCommands([
+//   {
+//     command: "test",
+//     description: "Тестова команда",
+//   },
+//   {
+//     command: "greetings",
+//     description: "Команда вітання",
+//   },
+// ]);
 
 bot.start((ctx) => {
-    const userId = ctx.from.id;
-    console.log(ctx.from);
-    userData[userId] = {
+  const userId = ctx.from.id;
+  console.log(ctx.from);
+  userData[userId] = {
     name: "",
-    salary:{
-        amount: 0,
-        date: "",
-    }};  
-    ctx.reply('Вітаю!\nЦе телеграм бот "TGPC_Salary_Bot".\nВведіть, будь ласка, своє імя та фамілію:');
+    salary: {
+      amount: 0,
+      date: "",
+    },
+  };
+  ctx.reply(
+    'Вітаю!\nЦе телеграм бот "TGPC_Salary_Bot".\nВведіть, будь ласка, своє імя та фамілію:'
+  );
 
-    bot.on('text', (ctx)=>{
-        const userId = ctx.from.id;
-        const text = ctx.message.text;
-        const regex = /^[A-Za-zА-ЩЬЮЯҐЄІЇа-щьюяґєії\s]+$/u;
-        if(regex.test(text)){
-            userData[userId].name = text;
-            ctx.reply(`Приємно познайомитись ${text}`);
-        } else{
-            ctx.reply('Ви ввели не допустимий символ!')
-        }
-    })
+  bot.on("text", (ctx) => {
+    const userId = ctx.from.id;
+    const text = ctx.message.text;
+    const regex = /^[A-Za-zА-ЩЬЮЯҐЄІЇа-щьюяґєії\s]+$/u;
+    if (regex.test(text)) {
+      userData[userId].name = text;
+      ctx.reply(`Приємно познайомитись ${text}`);
+    } else {
+      ctx.reply("Ви ввели не допустимий символ!");
+    }
+  });
 });
-bot.command('test', (ctx)=>{
-    ctx.reply('It is test!');
-})
-
+bot.command("test", (ctx) => {
+  ctx.reply("It is test!");
+});
 
 // bot.on('text', (ctx) => {
 //     const userId = ctx.from.id;
@@ -69,11 +74,10 @@ bot.command('test', (ctx)=>{
 //             let {amount, date} = userData[userId].salary;
 //             amount = number;
 //             date = formattedDate;
-           
+
 //             const rowValues = [[date,userData[userId].name,amount]];
 
 //             mode(rowValues);
-            
 
 //             ctx.reply(`Thank you! You entered number ${number}. Feel free to enter another number or type /done when you're finished.`);
 //         } else {
@@ -91,6 +95,20 @@ bot.command('test', (ctx)=>{
 //     }
 // });
 
-module.exports ={
-    bot,
-}
+bot.on("photo", async (ctx) => {
+  try {
+    const fileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
+
+    await uploadPhoto(IdList, params, fileId, process.env.BOT_TOKEN);
+
+    // Reply to the user
+    ctx.reply("Done");
+  } catch (error) {
+    console.error("Error:", error);
+    ctx.reply("Failed");
+  }
+});
+
+module.exports = {
+  bot,
+};
